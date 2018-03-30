@@ -1,0 +1,103 @@
+\documentclass[12pt]{article}
+
+%%%%% Greek language and fonts %%%%%%
+\usepackage[cm-default]{fontspec}
+\setromanfont{FreeSerif}
+\setsansfont{FreeSans}
+\setmonofont{FreeMono}
+
+\usepackage[a4paper, margin=0.75in]{geometry}
+\usepackage{multicol}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Headers and Footers %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+
+\fancyheadoffset{10pt}
+\renewcommand{\footrulewidth}{0.4pt}% default is 0pt
+
+\lhead{Project 2: JobExecutor}
+\chead{}
+\rhead{Γιώργος Κατσογιάννης - sdi1400065}
+
+\lfoot{Προγραμματισμός Συστήματος}
+\cfoot{\thepage}
+\rfoot{Εαρινό Εξάμηνο 2017-18}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Math packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{amsmath, amsfonts, amsthm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Graphs and Diagrams %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{float}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Source code package %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{listings}
+
+\usepgfplotslibrary{fillbetween}
+\usetikzlibrary{patterns}
+
+\begin{document}
+
+\pagenumbering{arabic}
+\thispagestyle{plain}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Title %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{multicols}{2}
+	\begin{flushleft}
+		\small{
+		Εθνικό και Καποδιστριακό Πανεπιστήμιο Αθηνών\\
+		Τμήμα Πληροφορικής \& Τηλεπικοινωνιών\\
+		Προγραμματισμός Συστήματος\\
+		}
+	\end{flushleft}
+
+	\columnbreak
+
+	\begin{flushright}
+		\small{
+		Γιώργος Κατσογιάννης-Μεϊμαράκης\\
+		sdi1400065@di.uoa.gr\\
+		Εαρινό Εξάμηνο 2017-18
+		}
+	\end{flushright}
+\end{multicols}
+
+\begin{center}
+	\LARGE{\bfseries{JobExecutor}}
+\end{center}
+
+\noindent\makebox[\linewidth]{\rule{\paperwidth}{1pt}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Main Document %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Μεταγλώττιση \& Εκτέλεση}
+\begin{itemize}
+	\item Η μεταγλώττιση του προγράμματος γίνεται χρησιμοποιώντας το Makefile με
+	την	εντολή make.
+	\item Το πρόγραμμα εκτελείται ως εξής: \verb|./jobExecutor -d <docfile> -w <workerCount>|
+\end{itemize}
+
+\subsection{Εντολές Προγράμματος}
+Το πρόγραμμα υλοποιεί όλες τις ζητούμενες λειτουργίες της άσκησης:
+\begin{itemize}
+	\item \verb|search <q1> [q2 ... q10]|
+	\item \verb|tf <index> <word>|
+	\item \verb|df [word]|
+\end{itemize}
+
+Και για τον τερματισμό του προγράμματος χρησιμοποιείται η εντολή:
+\begin{itemize}
+	\item \verb|exit|
+\end{itemize}
+
+\section{Δομή Προγράμματος}
+Το πρόγραμμα είναι χωρισμένο σε διαφορετικά αρχεία, καθένα από τα οποία
+υλοποιεί κάποια διαφορετική λειτουργία και δομή δεδομένων. Συγκεκριμένα, τα
+αρχεία:
+
+\begin{itemize}
+	\item
+\end{itemize}
+
+\end{document}
