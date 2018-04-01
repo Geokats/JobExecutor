@@ -5,6 +5,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
+
+#include "ipc.h"
 
 //File descriptor positions
 #define READ 0
@@ -96,7 +99,38 @@ int main(int argc, char * const *argv){
       perror("Error opening fifo");
       //TODO: Handle error
     }
+  }
 
+  //Give directories to workers
+  FILE *docFd = fopen(docFile, "r");
+  if(docFd == NULL){
+    perror("Error opening docfile");
+    return 1;
+  }
+  char *buffer = NULL;
+  size_t bufferSize = 0;
+
+  for(int i = 0; getline(&buffer, &bufferSize, docFd) != -1; i++){
+    if(writelineIPC(fifo[i % w][WRITE], buffer) == -1){
+      perror("Error sending dir to worker");
+    }
+    //Get confirmation from worker
+    if(getlineIPC(&buffer, &bufferSize, fifo[i % w][READ]) == -1){
+      perror("Error receiving msg from worker");
+    }
+    //Check confirmation
+    if(!strcmp(buffer, "OK") == 0){
+      fprintf(stderr, "Error: No confirmation received\n");
+    }
+  }
+
+  fclose(docFd);
+
+  for(int i = 0; i < w; i++){
+    sprintf(str, "STOP");
+    if(write(fifo[i][WRITE], str, 10) == -1){
+      perror("Error writing STOP");
+    }
   }
 
 
@@ -132,7 +166,13 @@ int main(int argc, char * const *argv){
     //TODO: Handle error
   }
 
+  if(remove("./logs") != 0){
+    perror("Error deleting fifo folder");
+    //TODO: Handle error
+  }
+
   free(wpid);
   free(fifo);
+  free(buffer);
   return 0;
 }
