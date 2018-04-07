@@ -8,16 +8,69 @@
 #include <dirent.h>
 
 #include "ipc.h"
+#include "textIndex.h"
+#include "postingList.h"
+#include "trie.h"
 
 
 //File descriptor positions
 #define READ 0
 #define WRITE 1
 
+/****************************** Helping Functions *****************************/
+
+int getFiles(char* dirName, char ***files, int *filesCount, int *filesSize){
+  //Allocate memory if files array hasn't been allocated
+  if(*files == NULL || filesSize == 0){
+    *filesCount = 0;
+    *filesSize = 10;
+    *files = malloc(*filesSize * sizeof(char**));
+    if(*files == NULL){
+      perror("Memory allocation error");
+      //TODO: Handle error
+    }
+  }
+
+  //Open dir
+  DIR *dir = opendir(dirName);
+  if(dir == NULL){
+    perror("Error opening directory");
+  }
+  //Iterate over dir's files
+  struct dirent *dirEntry;
+  while((dirEntry = readdir(dir)) != NULL){
+    //If the entry is a regular file
+    if(dirEntry->d_type == DT_REG){
+      //If needed allocate more memory
+      if(*filesCount >= *filesSize){
+        *filesSize *= 2;
+        *files = realloc(*files, *filesSize * sizeof(char**));
+        if(*files == NULL){
+          perror("Memory allocation error");
+          //TODO: Handle error
+        }
+      }
+      (*files)[*filesCount] = malloc((strlen(dirName) + strlen(dirEntry->d_name) + 2) * sizeof(char));
+      if((*files)[*filesCount] == NULL){
+        perror("Memory allocation error");
+        //TODO: Handle error
+      }
+      strcpy((*files)[*filesCount], dirName);
+      strcpy((*files)[*filesCount] + strlen(dirName), "/");
+      strcpy((*files)[*filesCount] + strlen(dirName) + 1, dirEntry->d_name);
+      *filesCount += 1;
+    }
+  }
+  closedir(dir);
+}
+
+/*********************************** Worker ***********************************/
+
 int main(int argc, char const *argv[]) {
   int wnum;
   char str[100];
 
+  //Get worker number
   if(argc != 2){
     fprintf(stderr, "Error: Excpected worker number\n");
     return 1;
@@ -41,38 +94,51 @@ int main(int argc, char const *argv[]) {
     //TODO: Handle error
   }
 
-  //Get directories
+  //Get directories from jobExecutor and extract the files
   char *buffer = NULL;
   size_t bufferSize = 0;
+
+  char **files = NULL;
+  int filesCount,filesSize;
 
   while(1){
     if(getlineIPC(&buffer, &bufferSize, fifo[READ]) == -1){
       perror("Error getting message from executor");
     }
-
     if(strcmp(buffer, "STOP") == 0){
       break;
     }
 
-    printf("worker #%d got dir: %s\n", wnum, buffer);
-
-    //Open dir
-    DIR *dir = opendir(buffer);
-    if(dir == NULL){
-      perror("Error opening directory");
-    }
-    //Iterate over dir's files
-    struct dirent *dirEntry;
-    while((dirEntry = readdir(dir)) != NULL){
-      if(dirEntry->d_type == DT_REG){
-        //If the entry is a regular file
-        printf("%s\n", dirEntry->d_name);
-      }
-    }
-    closedir(dir);
+    //Get files from directory and save them
+    getFiles(buffer, &files, &filesCount, &filesSize);
 
     //Send confirmation
     writelineIPC(fifo[WRITE], "OK");
+  }
+
+  //Create text indices from assigned files
+  textIndex **ti = malloc(filesCount * sizeof(textIndex*));
+  if(ti == NULL){
+    perror("Memory allocation error");
+  }
+
+  for(int i = 0; i < filesCount; i++){
+    ti[i] = createTI(files[i]);
+    if(ti[i] == NULL){
+      perror("Error creating text index");
+    }
+  }
+
+  //Create trie from text indices
+  trie *t = createTrie();
+  if(t == NULL){
+    perror("Error creating trie");
+  }
+
+  for(int i = 0; i < filesCount; i++){
+    if(insertTextIndexTrie(t, ti[i], i) == 0){
+      perror("Error inserting text index in trie");
+    }
   }
 
   printf("Worker %d ready!\n", wnum);
@@ -88,7 +154,15 @@ int main(int argc, char const *argv[]) {
     //TODO: Handle error
   }
 
+  //Free allocated memory
   free(buffer);
+  for(int i = 0; i < filesCount; i++){
+    deleteTI(ti[i]);
+    free(files[i]);
+  }
+  free(ti);
+  free(files);
+  deleteTrie(t);
 
   return 0;
 }

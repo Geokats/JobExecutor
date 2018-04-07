@@ -124,7 +124,9 @@ int main(int argc, char * const *argv){
     }
   }
 
-  fclose(docFd);
+  if(fclose(docFd) == EOF){
+    perror("Error closing docfile");
+  }
 
   for(int i = 0; i < w; i++){
     sprintf(str, "STOP");
@@ -133,6 +135,31 @@ int main(int argc, char * const *argv){
     }
   }
 
+  //Command Line Interface
+  char *cmd[12]; //A command can have 11 words at most
+
+  printf(">/");
+  while(getline(&buffer, &bufferSize, stdin) > 0){
+    cmd[0] = strtok(buffer, " \t\n"); //Get command
+    for(int i = 1; i <= 10; i++){
+      cmd[i] = strtok(NULL, " \t\n"); //Get command parameters
+    }
+    cmd[11] = NULL;
+
+    if(strcmp(cmd[0], "exit") == 0){
+      break;
+    }
+    else if(strcmp(cmd[0], "help") == 0){
+      printf("jobExecutor commands:\n");
+      printf("\t-help\n");
+      printf("\t-exit\n");
+    }
+    else{
+      fprintf(stderr, "Error: Not a valid command! Type 'help' to see available commands\n");
+    }
+
+    printf(">/");
+  }
 
   //Close and delete fifos
   for(int i = 0; i < w; i++){
@@ -174,5 +201,6 @@ int main(int argc, char * const *argv){
   free(wpid);
   free(fifo);
   free(buffer);
+
   return 0;
 }

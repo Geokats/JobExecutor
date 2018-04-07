@@ -1,20 +1,33 @@
 CC = gcc
 OUT = jobExecutor worker
-OBJ = jobExecutor.o
+EX_OBJ = jobExecutor.o ipc.o
+W_OBJ = worker.o ipc.o trie.o postingList.o textIndex.o
 
 all: jobExecutor worker
-	rm *.o
 
-jobExecutor: jobExecutor.c ipc
+jobExecutor: $(EX_OBJ)
+	$(CC) $(EX_OBJ) -o jobExecutor
+
+worker: $(W_OBJ)
+	$(CC) $(W_OBJ) -o worker
+
+jobExecutor.o: jobExecutor.c
 	$(CC) -c jobExecutor.c
-	$(CC) jobExecutor.o ipc.o -o jobExecutor
 
-worker: worker.c ipc
+worker.o: worker.c
 	$(CC) -c worker.c
-	$(CC) worker.o ipc.o -o worker
 
-ipc: ipc.c ipc.h
+ipc.o: ipc.c ipc.h
 	$(CC) -c ipc.c
 
+trie.o: trie.c trie.h
+	$(CC) -c trie.c
+
+postingList.o: postingList.c postingList.h
+	$(CC) -c postingList.c
+
+textIndex.o: textIndex.c textIndex.h
+	$(CC) -c textIndex.c
+
 clean:
-	rm $(OUT) $(OBJ)
+	rm $(OUT) $(ΕΧ_OBJ) $(W_OBJ)
