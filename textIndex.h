@@ -27,9 +27,5 @@ int getCharCountTI(textIndex *ti);
 /* Return the number of characters (bytes) in the text index
 */
 
-int textWordCountTI(textIndex *ti, int index);
-/* Return the number of words in the document with the given index
-*/
-
 #define TEXT_INDEX_H
 #endif

@@ -10,46 +10,12 @@
 
 /****************************** Helping Functions *****************************/
 
-int removeStringIndex(char *str, int expIndex){
-  //Remove the first word of the string and convert it to an int
-  //If it equals the expected index return 1, otherwise return 0
-
-  char *buffer;
-  int i, j;
-  int index;
-
-  i = 0;
-  while(!isspace(str[i])){
-    i++;
-  }
-
-  buffer = malloc((i+1) * sizeof(char));
-  //TODO: Error checking
-
-  //Copy index to buffer
-  str[i] = '\0';
-  strcpy(buffer, str);
-  //Remove index from str
-  j = -1;
-  do{
-    j++;
-    i++;
-    str[j] = str[i];
-  }while(str[j] != '\0');
-
-  index = atoi(buffer);
-  free(buffer);
-
-  return index == expIndex;
-}
-
-int countWords(char *str){
-  //Count the number of word in the string
+void countWordsAndChars(char *str, int *wordCount, int *charCount){
+  int i;
   int count = 0;
   int afterSpace = 1;
 
-
-  for(int i = 0; str[i] != '\0'; i++){
+  for(i = 0; str[i] != '\0'; i++){
     if(isspace(str[i])){
       afterSpace = 1;
     }
@@ -60,7 +26,8 @@ int countWords(char *str){
     }
   }
 
-  return count;
+  *charCount = i;
+  *wordCount = count;
 }
 
 /********************************* Text Index *********************************/
@@ -106,13 +73,14 @@ textIndex *createTI(const char *fileName){
       }
 
       ti->text[textIndex][charIndex] = '\0';
-      if(!removeStringIndex(ti->text[textIndex], textIndex)){
-        fprintf(stderr, "Index error\n");
-        return NULL;
-      }
 
-      //Update word and text count
-      ti->wordCount += countWords(ti->text[textIndex]);
+      //Count words and chars in new text
+      int words, chars;
+      countWordsAndChars(ti->text[textIndex], &words, &chars);
+
+      //Update char, word and text count
+      ti->charCount += chars;
+      ti->wordCount += words;
       ti->textCount += 1;
 
       //Go to next line
@@ -183,9 +151,4 @@ int getTextCountTI(textIndex *ti){
 
 int getCharCountTI(textIndex *ti){
   return ti->charCount;
-}
-
-int textWordCountTI(textIndex *ti, int index){
-  char *str = getTextTI(ti, index);
-  return countWords(str);
 }
