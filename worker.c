@@ -111,7 +111,6 @@ int main(int argc, char const *argv[]) {
 
     //Get files from directory and save them
     getFiles(buffer, &files, &filesCount, &filesSize);
-
     //Send confirmation
     writelineIPC(fifo[WRITE], "OK");
   }
@@ -143,6 +142,33 @@ int main(int argc, char const *argv[]) {
 
   printf("Worker %d ready!\n", wnum);
 
+  //Inform executor that you're ready to receive a command
+  writelineIPC(fifo[WRITE], "READY");
+
+  //Get command from executor
+  while(1){
+    if(getlineIPC(&buffer, &bufferSize, fifo[READ]) == -1){
+      perror("Error getting message from executor");
+    }
+
+    if(strcmp(buffer, "STOP") == 0){
+      break;
+    }
+    else if(strcmp(buffer, "wc") == 0){
+      int chars = 0;
+      int words = 0;
+      int texts = 0;
+
+      for(int i = 0; i < filesCount; i++){
+        chars += getCharCountTI(ti[i]);
+        words += getWordCountTI(ti[i]);
+        texts += getTextCountTI(ti[i]);
+      }
+
+      sprintf(buffer, "%d %d %d\n", chars, words, texts);
+      writelineIPC(fifo[WRITE], buffer);
+    }
+  }
 
   //Close fifos
   if(close(fifo[READ]) != 0){

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #define BUFFER_SIZE 100
 
@@ -22,16 +23,21 @@ int getlineIPC(char **buffer, size_t *bufferSize, int fd){
       break;
     }
 
-    if(i - 2 >= *bufferSize){
+    if(i >= *bufferSize + 2){
       *bufferSize *= 2;
       *buffer = realloc(*buffer, *bufferSize * sizeof(char));
       if(*buffer == NULL){
+        fprintf(stderr, "Memory allocation error\n");
         return -1;
       }
     }
 
     (*buffer)[i] = c;
     i++;
+  }
+
+  if(c != '\n' && c != '\0'){
+    fprintf(stderr, "Error: process read from fifo without reaching the end\n");
   }
 
   if(ret == -1){

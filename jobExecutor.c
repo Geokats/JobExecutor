@@ -129,9 +129,17 @@ int main(int argc, char * const *argv){
   }
 
   for(int i = 0; i < w; i++){
+    //Tell workers that all directories are sent
     sprintf(str, "STOP");
-    if(write(fifo[i][WRITE], str, 10) == -1){
-      perror("Error writing STOP");
+    writelineIPC(fifo[i][WRITE], str);
+
+    //Wait for confirmation that worker is ready
+    if(getlineIPC(&buffer, &bufferSize, fifo[i][READ]) == -1){
+      perror("Error receiving msg from worker");
+    }
+    //Check confirmation
+    if(!strcmp(buffer, "READY") == 0){
+      fprintf(stderr, "Error: No ready confirmation received\n");
     }
   }
 
@@ -146,8 +154,41 @@ int main(int argc, char * const *argv){
     }
     cmd[11] = NULL;
 
+
     if(strcmp(cmd[0], "exit") == 0){
       break;
+    }
+    else if(strcmp(cmd[0], "wc") == 0){
+      //Send command to workers
+      for(int i = 0; i < w; i++){
+        sprintf(str, "wc");
+        for(int i = 0; i < w; i++){
+          writelineIPC(fifo[i][WRITE], str);
+        }
+      }
+
+      //Get results from workers
+      char *cp;
+      int chars = 0;
+      int words = 0;
+      int texts = 0;
+
+      for(int i = 0; i < w; i ++){
+        if(getlineIPC(&buffer, &bufferSize, fifo[i][READ]) == -1){
+          perror("Error receiving msg from worker");
+        }
+
+        cp = strtok(buffer, " ");
+        chars += atoi(cp);
+
+        cp = strtok(NULL, " ");
+        words += atoi(cp);
+
+        cp = strtok(NULL, "\n");
+        texts += atoi(cp);
+      }
+
+      printf("%d %d %d\n", chars, words, texts);
     }
     else if(strcmp(cmd[0], "help") == 0){
       printf("jobExecutor commands:\n");
@@ -159,6 +200,12 @@ int main(int argc, char * const *argv){
     }
 
     printf(">/");
+  }
+
+  //Tell workers to stop
+  sprintf(str, "STOP");
+  for(int i = 0; i < w; i++){
+    writelineIPC(fifo[i][WRITE], str);
   }
 
   //Close and delete fifos
@@ -198,6 +245,7 @@ int main(int argc, char * const *argv){
     //TODO: Handle error
   }
 
+  //Free allocated memory
   free(wpid);
   free(fifo);
   free(buffer);

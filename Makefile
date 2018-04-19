@@ -2,6 +2,7 @@ CC = gcc
 OUT = jobExecutor worker
 EX_OBJ = jobExecutor.o ipc.o
 W_OBJ = worker.o ipc.o trie.o postingList.o textIndex.o
+OBJ = jobExecutor.o worker.o ipc.o trie.o postingList.o textIndex.o
 
 all: jobExecutor worker
 
@@ -30,4 +31,4 @@ textIndex.o: textIndex.c textIndex.h
 	$(CC) -c textIndex.c
 
 clean:
-	rm $(OUT) $(ΕΧ_OBJ) $(W_OBJ)
+	rm $(OUT) $(OBJ)
