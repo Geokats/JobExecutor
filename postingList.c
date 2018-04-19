@@ -207,7 +207,7 @@ int getMincountFilePL(postingList *pl, int *appearances){
     pln = getNextPLN(pln);
   }
 
-  if(curCount < minCount){
+  if(minCount == 0 || curCount < minCount){
     minCount = curCount;
     minFile = curFile;
   }
