@@ -143,3 +143,39 @@ void printPL(postingList *pl){
   }
   printf("]");
 }
+
+int getMaxcountFilePL(postingList *pl, int *appearances){
+  int curFile = -1;
+  int maxFile = -1;
+  int curCount = 0;
+  int maxCount = 0;
+
+  plNode *pln = pl->start;
+  while(pln != NULL){
+    if(curFile == -1){
+      curFile = getFileIndexPLN(pln);
+      curCount = getCountPLN(pln);
+    }
+    else if(curFile != getFileIndexPLN(pln)){
+      if(curCount > maxCount){
+        maxCount = curCount;
+        maxFile = curFile;
+      }
+      curFile = getFileIndexPLN(pln);
+      curCount = getCountPLN(pln);
+    }
+    else{
+      curCount += getCountPLN(pln);
+    }
+
+    pln = getNextPLN(pln);
+  }
+
+  if(curCount > maxCount){
+    maxCount = curCount;
+    maxFile = curFile;
+  }
+
+  *appearances = maxCount;
+  return maxFile;
+}

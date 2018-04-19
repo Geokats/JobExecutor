@@ -145,16 +145,41 @@ int main(int argc, char const *argv[]) {
   //Inform executor that you're ready to receive a command
   writelineIPC(fifo[WRITE], "READY");
 
+  char *cmd[12]; //A command can have 11 words at most
+  postingList *pl;
+  int appearances;
+  int fileIndex;
+
   //Get command from executor
   while(1){
     if(getlineIPC(&buffer, &bufferSize, fifo[READ]) == -1){
       perror("Error getting message from executor");
     }
+    else{
+      cmd[0] = strtok(buffer, " \t\n"); //Get command
+      for(int i = 1; i <= 10; i++){
+        cmd[i] = strtok(NULL, " \t\n"); //Get command parameters
+      }
+      cmd[11] = NULL;
+    }
 
-    if(strcmp(buffer, "STOP") == 0){
+    if(strcmp(cmd[0], "STOP") == 0){
       break;
     }
-    else if(strcmp(buffer, "wc") == 0){
+    else if(strcmp(cmd[0], "maxcount") == 0){
+      pl = searchWordTrie(t, cmd[1]);
+      if(pl == NULL){
+        sprintf(buffer, "0\n");
+      }
+      else{
+        fileIndex = getMaxcountFilePL(pl, &appearances);
+        sprintf(buffer, "%d %s\n", appearances, files[fileIndex]);
+      }
+
+      //Send result to jobExecutor
+      writelineIPC(fifo[WRITE], buffer);
+    }
+    else if(strcmp(cmd[0], "wc") == 0){
       int chars = 0;
       int words = 0;
       int texts = 0;
@@ -165,6 +190,7 @@ int main(int argc, char const *argv[]) {
         texts += getTextCountTI(ti[i]);
       }
 
+      //Send result to jobExecutor
       sprintf(buffer, "%d %d %d\n", chars, words, texts);
       writelineIPC(fifo[WRITE], buffer);
     }

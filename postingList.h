@@ -32,4 +32,8 @@ void printPL(postingList *pl);
 /* Prints all the indices and appearance counts in the list
 */
 
+int getMaxcountFilePL(postingList *pl, int *appearances);
+/* Returns the index of the file with the most appearances
+*/
+
 #endif
