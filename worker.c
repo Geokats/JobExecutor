@@ -179,6 +179,19 @@ int main(int argc, char const *argv[]) {
       //Send result to jobExecutor
       writelineIPC(fifo[WRITE], buffer);
     }
+    else if(strcmp(cmd[0], "mincount") == 0){
+      pl = searchWordTrie(t, cmd[1]);
+      if(pl == NULL){
+        sprintf(buffer, "0\n");
+      }
+      else{
+        fileIndex = getMincountFilePL(pl, &appearances);
+        sprintf(buffer, "%d %s\n", appearances, files[fileIndex]);
+      }
+
+      //Send result to jobExecutor
+      writelineIPC(fifo[WRITE], buffer);
+    }
     else if(strcmp(cmd[0], "wc") == 0){
       int chars = 0;
       int words = 0;

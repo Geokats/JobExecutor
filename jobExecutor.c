@@ -146,7 +146,7 @@ int main(int argc, char * const *argv){
   //Command Line Interface
   char *cmd[12]; //A command can have 11 words at most
   char *cp;
-  char file[100], maxFile[100];
+  char file[100], bestFile[100];
 
   printf(">/");
   while(getline(&buffer, &bufferSize, stdin) > 0){
@@ -188,7 +188,7 @@ int main(int argc, char * const *argv){
 
           if(cur > max){
             max = cur;
-            strcpy(maxFile, file);
+            strcpy(bestFile, file);
           }
         }
 
@@ -197,7 +197,47 @@ int main(int argc, char * const *argv){
           printf("Word not found\n");
         }
         else{
-          printf("%d %s\n", max, maxFile);
+          printf("%d %s\n", max, bestFile);
+        }
+      }
+    }
+    else if(strcmp(cmd[0], "mincount") == 0){
+      if(cmd[1] == NULL){
+        fprintf(stderr, "Error: No word given\n");
+      }
+      else{
+        //Send command to workers
+        sprintf(buffer, "%s %s\n", cmd[0], cmd[1]); // "maxcount <word>"
+        for(int i = 0; i < w; i++){
+          writelineIPC(fifo[i][WRITE], cmd[0]);
+        }
+
+        //Get results from workers
+        int min = 0;
+        int cur;
+
+        for(int i = 0; i < w; i++){
+          if(getlineIPC(&buffer, &bufferSize, fifo[i][READ]) == -1){
+            perror("Error receiving msg from worker");
+          }
+          cp = strtok(buffer, " \n");
+          cur = atoi(cp);
+          if(cur != 0){
+            cp = strtok(NULL, "\n");
+            strcpy(file, cp);
+          }
+          if(cur > 0 && (cur < min || min == 0)){
+            min = cur;
+            strcpy(bestFile, file);
+          }
+        }
+
+        //Print file with most appearances
+        if(min == 0){
+          printf("Word not found\n");
+        }
+        else{
+          printf("%d %s\n", min, bestFile);
         }
       }
     }

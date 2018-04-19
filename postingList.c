@@ -179,3 +179,39 @@ int getMaxcountFilePL(postingList *pl, int *appearances){
   *appearances = maxCount;
   return maxFile;
 }
+
+int getMincountFilePL(postingList *pl, int *appearances){
+  int curFile = -1;
+  int minFile = -1;
+  int curCount = 0;
+  int minCount = 0;
+
+  plNode *pln = pl->start;
+  while(pln != NULL){
+    if(curFile == -1){
+      curFile = getFileIndexPLN(pln);
+      curCount = getCountPLN(pln);
+    }
+    else if(curFile != getFileIndexPLN(pln)){
+      if(minCount == 0 || curCount < minCount){
+        minCount = curCount;
+        minFile = curFile;
+      }
+      curFile = getFileIndexPLN(pln);
+      curCount = getCountPLN(pln);
+    }
+    else{
+      curCount += getCountPLN(pln);
+    }
+
+    pln = getNextPLN(pln);
+  }
+
+  if(curCount < minCount){
+    minCount = curCount;
+    minFile = curFile;
+  }
+
+  *appearances = minCount;
+  return minFile;
+}

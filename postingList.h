@@ -36,4 +36,8 @@ int getMaxcountFilePL(postingList *pl, int *appearances);
 /* Returns the index of the file with the most appearances
 */
 
+int getMincountFilePL(postingList *pl, int *appearances);
+/* Returns the index of the file with the least appearances
+*/
+
 #endif
