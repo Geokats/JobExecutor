@@ -19,6 +19,18 @@
 
 /****************************** Helping Functions *****************************/
 
+int strmcat(char **dest, char *src, size_t *destSize){
+  if(strlen(*dest) + strlen(src) + 1 > *destSize){
+    *destSize += strlen(src) + 10;
+    *dest = realloc(*dest, *destSize * sizeof(char));
+    if(*dest == NULL){
+      return -1;
+    }
+  }
+  strcat(*dest, src);
+  return 1;
+}
+
 int getFiles(char* dirName, char ***files, int *filesCount, int *filesSize){
   //Allocate memory if files array hasn't been allocated
   if(*files == NULL || filesSize == 0){
@@ -165,6 +177,37 @@ int main(int argc, char const *argv[]) {
 
     if(strcmp(cmd[0], "STOP") == 0){
       break;
+    }
+    else if(strcmp(cmd[0], "search") == 0){
+      postingList *resPL = createPL();
+      postingList *pl;
+
+      //Get all text that have atleast one of the keywords
+      for(int i = 1; cmd[i] != NULL; i++){
+        pl = searchWordTrie(t, cmd[i]);
+        if(pl != NULL){
+          plNode *pln = getStartPL(pl);
+          while(pln != NULL){
+            addAppearancePL(resPL, getFileIndexPLN(pln), getTextIndexPLN(pln));
+            pln = getNextPLN(pln);
+          }
+        }
+      }
+
+      //Send texts to jobExecutor
+      plNode *pln = getStartPL(resPL);
+      while(pln != NULL){
+        sprintf(buffer, "%s %d ", files[getFileIndexPLN(pln)], getTextIndexPLN(pln));
+        strmcat(&buffer, getTextTI(ti[getFileIndexPLN(pln)], getTextIndexPLN(pln)), &bufferSize);
+
+        writelineIPC(fifo[WRITE], buffer);
+
+        pln = getNextPLN(pln);
+      }
+
+      sprintf(buffer, "STOP");
+      writelineIPC(fifo[WRITE], buffer);
+      deletePL(resPL);
     }
     else if(strcmp(cmd[0], "maxcount") == 0){
       pl = searchWordTrie(t, cmd[1]);

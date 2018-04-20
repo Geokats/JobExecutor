@@ -160,6 +160,33 @@ int main(int argc, char * const *argv){
     if(strcmp(cmd[0], "exit") == 0){
       break;
     }
+    else if(strcmp(cmd[0], "search") == 0){
+      //Send command to workers
+      sprintf(buffer, "search %s\n", cmd[1]);
+      // for(int i = 1; cmd[i] != NULL; i++){
+      //   strcat(buffer, " ");
+      //   strcat(buffer, cmd[i]);
+      // }
+      // strcat(buffer,"\n");
+
+      for(int i = 0; i < w; i++){
+        writelineIPC(fifo[i][WRITE], buffer);
+      }
+
+      //Get and print results from workers
+      for(int i = 0; i < w; i++){
+        if(getlineIPC(&buffer, &bufferSize, fifo[i][READ]) == -1){
+          perror("Error receiving msg from worker");
+        }
+        while(strcmp(buffer, "STOP") != 0){
+          printf("%s\n\n", buffer);
+
+          if(getlineIPC(&buffer, &bufferSize, fifo[i][READ]) == -1){
+            perror("Error receiving msg from worker");
+          }
+        }
+      }
+    }
     else if(strcmp(cmd[0], "maxcount") == 0){
       if(cmd[1] == NULL){
         fprintf(stderr, "Error: No word given\n");

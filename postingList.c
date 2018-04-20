@@ -79,6 +79,10 @@ void deletePL(postingList *pl){
   free(pl);
 }
 
+plNode *getStartPL(postingList *pl){
+  return pl->start;
+}
+
 int addAppearancePL(postingList *pl, int fileIndex, int textIndex){
   plNode *prev = NULL;
   plNode *pln = pl->start;
