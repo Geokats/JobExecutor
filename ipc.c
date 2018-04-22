@@ -23,7 +23,7 @@ int getlineIPC(char **buffer, size_t *bufferSize, int fd){
       break;
     }
 
-    if(i >= *bufferSize + 2){
+    if(i + 2 >= *bufferSize){
       *bufferSize *= 2;
       *buffer = realloc(*buffer, *bufferSize * sizeof(char));
       if(*buffer == NULL){

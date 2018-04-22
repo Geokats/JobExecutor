@@ -429,10 +429,10 @@ int main(int argc, char * const *argv){
     //TODO: Handle error
   }
 
-  if(remove("./logs") != 0){
-    perror("Error deleting logs folder");
-    //TODO: Handle error
-  }
+  // if(remove("./logs") != 0){
+  //   perror("Error deleting logs folder");
+  //   //TODO: Handle error
+  // }
 
   //Free allocated memory
   free(wpid);
