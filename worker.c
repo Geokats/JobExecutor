@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <time.h>
 
 #include "ipc.h"
 #include "textIndex.h"
@@ -80,6 +81,8 @@ int getFiles(char* dirName, char ***files, int *filesCount, int *filesSize){
 
 int main(int argc, char const *argv[]) {
   int wnum;
+  time_t rawTime;
+  struct tm *logtime;
   char str[100];
 
   //Get worker number
@@ -126,6 +129,16 @@ int main(int argc, char const *argv[]) {
     //Send confirmation
     writelineIPC(fifo[WRITE], "OK");
   }
+
+  //If worker has no files then it must stop :(
+  if(filesCount <= 0){
+    fprintf(stderr, "Error: Worker %d has no files\n", wnum);
+    return 1;
+  }
+
+  //Create log file
+  sprintf(str, "./logs/w%d_%d.log", wnum, getpid());
+  FILE *logFd = fopen(str, "w");
 
   //Create text indices from assigned files
   textIndex **ti = malloc(filesCount * sizeof(textIndex*));
@@ -175,6 +188,9 @@ int main(int argc, char const *argv[]) {
       cmd[11] = NULL;
     }
 
+    time(&rawTime);
+    logtime = localtime(&rawTime);
+
     if(strcmp(cmd[0], "STOP") == 0){
       break;
     }
@@ -185,13 +201,21 @@ int main(int argc, char const *argv[]) {
       //Get all text that have atleast one of the keywords
       for(int i = 1; cmd[i] != NULL; i++){
         pl = searchWordTrie(t, cmd[i]);
+        fprintf(logFd, "%d-%d-%d %02d:%02d:%02d : search : %s"
+                     ,logtime->tm_mday, logtime->tm_mon, logtime->tm_year + 1900
+                     ,logtime->tm_hour, logtime->tm_min, logtime->tm_sec
+                     ,cmd[i]);
+
         if(pl != NULL){
           plNode *pln = getStartPL(pl);
           while(pln != NULL){
+            fprintf(logFd, " : %s", files[getFileIndexPLN(pln)]);
+
             addAppearancePL(resPL, getFileIndexPLN(pln), getTextIndexPLN(pln));
             pln = getNextPLN(pln);
           }
         }
+        fprintf(logFd, "\n");
       }
 
       //Send texts to jobExecutor
@@ -210,6 +234,11 @@ int main(int argc, char const *argv[]) {
       deletePL(resPL);
     }
     else if(strcmp(cmd[0], "maxcount") == 0){
+      fprintf(logFd, "%d-%d-%d %02d:%02d:%02d : maxcount : %s"
+                   ,logtime->tm_mday, logtime->tm_mon, logtime->tm_year + 1900
+                   ,logtime->tm_hour, logtime->tm_min, logtime->tm_sec
+                   ,cmd[1]);
+
       pl = searchWordTrie(t, cmd[1]);
       if(pl == NULL){
         sprintf(buffer, "0\n");
@@ -219,17 +248,36 @@ int main(int argc, char const *argv[]) {
         sprintf(buffer, "%d %s\n", appearances, files[fileIndex]);
       }
 
+      if(pl != NULL){
+        fprintf(logFd, " : %s\n", files[fileIndex]);
+      }
+      else{
+        fprintf(logFd, "\n");
+      }
+
       //Send result to jobExecutor
       writelineIPC(fifo[WRITE], buffer);
     }
     else if(strcmp(cmd[0], "mincount") == 0){
       pl = searchWordTrie(t, cmd[1]);
+      fprintf(logFd, "%d-%d-%d %02d:%02d:%02d : mincount : %s"
+                   ,logtime->tm_mday, logtime->tm_mon, logtime->tm_year + 1900
+                   ,logtime->tm_hour, logtime->tm_min, logtime->tm_sec
+                   ,cmd[1]);
+
       if(pl == NULL){
         sprintf(buffer, "0\n");
       }
       else{
         fileIndex = getMincountFilePL(pl, &appearances);
         sprintf(buffer, "%d %s\n", appearances, files[fileIndex]);
+      }
+
+      if(pl != NULL){
+        fprintf(logFd, " : %s\n", files[fileIndex]);
+      }
+      else{
+        fprintf(logFd, "\n");
       }
 
       //Send result to jobExecutor
@@ -249,6 +297,12 @@ int main(int argc, char const *argv[]) {
       //Send result to jobExecutor
       sprintf(buffer, "%d %d %d\n", chars, words, texts);
       writelineIPC(fifo[WRITE], buffer);
+
+      //
+      fprintf(logFd, "%d-%d-%d %02d:%02d:%02d : wc : %d : %d : %d\n"
+                   ,logtime->tm_mday, logtime->tm_mon, logtime->tm_year + 1900
+                   ,logtime->tm_hour, logtime->tm_min, logtime->tm_sec
+                   ,chars, words, texts);
     }
   }
 
@@ -261,6 +315,9 @@ int main(int argc, char const *argv[]) {
     perror("Error closing fifo");
     //TODO: Handle error
   }
+
+  //Close log file
+  fclose(logFd);
 
   //Free allocated memory
   free(buffer);
