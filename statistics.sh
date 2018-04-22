@@ -2,7 +2,7 @@
 files=./logs/*.log
 # echo $files;
 
-searchCount=$(cat $files | awk -F ' : ' '{if($2=="search") print $2" "$3}' | wc -l)
+searchCount=$(cat $files | awk -F ' : ' '{if($2=="search") print $2" "$3}' | sort | uniq -c | wc -l)
 echo "The workers performed a total of $searchCount searches";
 
 mostFound=$(cat $files | awk -F ' : ' '{for(i=4;i<=NF;i++) if($2 != "wc") print $3}' | sort | uniq -c | sort -nr | head -n 1)
