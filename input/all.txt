@@ -1,0 +1,9 @@
+./input/dirA
+./input/dirB
+./input/dirC/a
+./input/dirC/b
+./input/dirC/c
+./input/dirD/a
+./input/dirD/b
+./input/dirD/c
+./input/dirD/empty
