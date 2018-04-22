@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 #include "ipc.h"
 
@@ -13,13 +15,92 @@
 #define READ 0
 #define WRITE 1
 
+//Global variables needed by signal handler
+char *docFile;
+int w;
+pid_t *wpid;
+int **fifo;
+
+//Signal handler for reviving dead workers
+void revive(int sig){
+  char str[100];
+
+  pid_t pid = wait(NULL);
+  int wnum; //Get dead worker's index
+  for(wnum = 0; wpid[wnum] != pid; wnum++);
+
+  printf("Worker %d (pid = %d) is dead\n", wnum, pid);
+
+  //Create new worker
+  if((wpid[wnum] = fork()) == 0){
+    sprintf(str, "%d", wnum);
+    execlp("./worker", "worker", str, NULL);
+  }
+
+  //Open fifos
+  sprintf(str, "./fifos/to_w%d.fifo", wnum);
+  if((fifo[wnum][WRITE] = open(str,O_WRONLY)) == -1){
+    perror("Error opening fifo");
+    //TODO: Handle error
+  }
+  sprintf(str, "./fifos/from_w%d.fifo", wnum);
+  if((fifo[wnum][READ] = open(str,O_RDONLY)) == -1){
+    perror("Error opening fifo");
+    //TODO: Handle error
+  }
+
+  //Give directories to worker
+  FILE *docFd = fopen(docFile, "r");
+  if(docFd == NULL){
+    perror("Error opening docfile");
+  }
+
+  char *buffer = NULL;
+  size_t bufferSize = 0;
+
+  for(int i = 0; getline(&buffer, &bufferSize, docFd) != -1; i++){
+    if(i % w == wnum){
+      if(writelineIPC(fifo[wnum][WRITE], buffer) == -1){
+        perror("Error sending dir to worker");
+      }
+      //Get confirmation from worker
+      if(getlineIPC(&buffer, &bufferSize, fifo[wnum][READ]) == -1){
+        perror("Error receiving msg from worker");
+      }
+      //Check confirmation
+      if(!strcmp(buffer, "OK") == 0){
+        fprintf(stderr, "Error: No confirmation received\n");
+      }
+    }
+  }
+
+  if(fclose(docFd) == EOF){
+    perror("Error closing docfile");
+  }
+
+  //Tell worker that all directories are sent
+  sprintf(str, "STOP");
+  writelineIPC(fifo[wnum][WRITE], str);
+
+  //Wait for confirmation that worker is ready
+  if(getlineIPC(&buffer, &bufferSize, fifo[wnum][READ]) == -1){
+    perror("Error receiving msg from worker");
+  }
+  //Check confirmation
+  if(!strcmp(buffer, "READY") == 0){
+    fprintf(stderr, "Error: No ready confirmation received\n");
+  }
+
+  free(buffer);
+}
+
 int main(int argc, char * const *argv){
   char str[100];
 
   //Get command line arguments
   int c;
-  char *docFile = NULL;
-  int w = 0;
+  docFile = NULL;
+  w = 0;
 
   while((c = getopt(argc, argv, "d:w:")) != -1){
     switch(c){
@@ -51,15 +132,17 @@ int main(int argc, char * const *argv){
     return 1;
   }
 
+  signal(SIGCHLD, revive);
+
   //Store child processes' pids
-  pid_t *wpid = malloc(w * sizeof(pid_t));
+  wpid = malloc(w * sizeof(pid_t));
   if(wpid == NULL){
     fprintf(stderr, "Memory allocation error\n");
     return 1;
   }
 
   //Create workers and fifos for each worker
-  int **fifo = malloc(w * sizeof(int*));
+  fifo = malloc(w * sizeof(int*));
   if(fifo == NULL){
     fprintf(stderr, "Memory allocation error\n");
     return 1;

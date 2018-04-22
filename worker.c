@@ -139,6 +139,9 @@ int main(int argc, char const *argv[]) {
   //Create log file
   sprintf(str, "./logs/w%d_%d.log", wnum, getpid());
   FILE *logFd = fopen(str, "w");
+  if(logFd == NULL){
+    perror("Error creating log file");
+  }
 
   //Create text indices from assigned files
   textIndex **ti = malloc(filesCount * sizeof(textIndex*));
